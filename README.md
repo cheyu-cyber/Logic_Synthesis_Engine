@@ -1,6 +1,6 @@
 # Logic_Synthesis_Engine
 
-##Goal
+## Goal
 Input: file (EDA standards) read via cli interface/gui with standard file picker
 Input requirements: A boolean algebraic function with SOP / POS (optional) support.
 Process: 
