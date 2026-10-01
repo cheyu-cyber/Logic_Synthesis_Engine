@@ -1,0 +1,1 @@
+"""Forward and inverse Canonical SOP and POS forms synthesis module."""
