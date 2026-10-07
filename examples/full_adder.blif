@@ -1,0 +1,14 @@
+# 1-bit full adder: sum = a ^ b ^ cin, cout = majority(a, b, cin)
+.model full_adder
+.inputs a b cin
+.outputs sum cout
+.names a b cin sum
+001 1
+010 1
+100 1
+111 1
+.names a b cin cout
+11- 1
+1-1 1
+-11 1
+.end
