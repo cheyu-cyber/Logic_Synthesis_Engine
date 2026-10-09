@@ -9,6 +9,8 @@ from logging import root
 import sys
 from pathlib import Path
 
+from lse import pipeline
+
 FILE_EXTENSIONS = (".txt", ".blif")
 
 
@@ -68,10 +70,15 @@ def main(argv: list[str] | None = None) -> int:
     try:
         path = retrieve_path(args.file)
         text = path.read_text(encoding="utf-8")
-    except (InputError) as exc:
+        results = pipeline.run(text)
+    except (InputError, ValueError) as exc:
         print(f"lse: error: {exc}", file=sys.stderr)
         return 1
     print(f"Loaded input file: {path} ({len(text.splitlines())} lines)")
+    for out, forms in results.items():
+        print(f"\n[{out}]")
+        print(f"  SOP:           {forms['sop']}")
+        print(f"  Canonical SOP: {forms['canonical_sop']}")
     return 0
 
 
