@@ -78,7 +78,10 @@ def main(argv: list[str] | None = None) -> int:
     for out, forms in results.items():
         print(f"\n[{out}]")
         print(f"  SOP:           {forms['sop']}")
+        print(f"  Minterms:      \u03a3m({', '.join(map(str, forms['minterms']))})")
         print(f"  Canonical SOP: {forms['canonical_sop']}")
+        print(f"  Maxterms:      \u03a0M({', '.join(map(str, forms['maxterms']))})")
+        print(f"  Canonical POS: {forms['canonical_pos']}")
     return 0
 
 
