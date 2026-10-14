@@ -29,3 +29,17 @@ def canonical_pos(module: BlifModule, output):
     terms = ["(" + " + ".join(s + "'" if m >> (n - 1 - i) & 1 else s for i, s in enumerate(module.inputs)) + ")"
                 for m in maxterms(module, output)]
     return " ".join(terms) or "1"
+
+def inverse_canonical_sop(module: BlifModule, output):
+    """Output inverse as sum of minterms (minterms of F' are the maxterms of F)"""
+    n = len(module.inputs)
+    terms = ["".join(s if m >> (n - 1 - i) & 1 else s + "'" for i, s in enumerate(module.inputs))
+                for m in maxterms(module, output)]
+    return " + ".join(terms) or "0"
+
+def inverse_canonical_pos(module: BlifModule, output):
+    """Output inverse as product of maxterms (maxterms of F' are the minterms of F)"""
+    n = len(module.inputs)
+    terms = ["(" + " + ".join(s + "'" if m >> (n - 1 - i) & 1 else s for i, s in enumerate(module.inputs)) + ")"
+                for m in minterms(module, output)]
+    return " ".join(terms) or "1"
