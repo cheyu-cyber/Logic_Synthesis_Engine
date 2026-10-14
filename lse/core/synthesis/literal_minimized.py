@@ -1,5 +1,5 @@
 """Literal Minimized SOP/POSforms synthesis module.
-Using Quine-McCluskey, Espresso-like, or K-map minimization
+Using an Espresso-like minimization algorithm
 """
 
 import re
@@ -221,7 +221,6 @@ def minimize_sop_string(sop_str, var_names):
     print("----Minimizing SOP expression with Espresso Algorithm----")
 
     raw_terms = [t.strip() for t in sop_str.split('+')]
-    print("raw terms:", raw_terms)
     num_vars = len(var_names)
 
     # 1. Map input terms to positional binary cubes
@@ -239,13 +238,11 @@ def minimize_sop_string(sop_str, var_names):
 
     # 2. Compute ON-set minterms and generate OFF-set (R)
     on_minterms = set().union(*(minterms_of_cube(c) for c in F_init))
-    print("on_minterms:", on_minterms)
     all_minterms = {format(i, f'0{num_vars}b') for i in range(1 << num_vars)}
     R_off = all_minterms - on_minterms
 
     # 3. Run Espresso algorithm
-    optimized_cubes, cost_reduction, prime_imps = espresso_minimize(F_init,
-                                                                    R_off)
+    optimized_cubes, cost_reduction, cube = espresso_minimize(F_init, R_off)
 
     # 4. Convert output cubes back to Boolean algebraic string
     sop_terms = []
@@ -260,7 +257,7 @@ def minimize_sop_string(sop_str, var_names):
 
     final_exp = " + ".join(sop_terms) if sop_terms else "0"
 
-    return final_exp, cost_reduction, prime_imps
+    return final_exp, cost_reduction, cube
 
 
 def minimize_pos_string(pos_str, var_names):
@@ -292,8 +289,7 @@ def minimize_pos_string(pos_str, var_names):
     R_on = all_minterms - off_minterms
 
     # 3. Run Espresso algorithm
-    optimized_cubes, cost_reduction, prime_imps = espresso_minimize(F_off,
-                                                                    R_on)
+    optimized_cubes, cost_reduction, cube = espresso_minimize(F_off, R_on)
 
     # 4. Convert output cubes back to Boolean algebraic string
     pos_terms = []
@@ -309,25 +305,28 @@ def minimize_pos_string(pos_str, var_names):
 
     final_exp = " * ".join(pos_terms)
 
-    return final_exp, cost_reduction, prime_imps
+    return final_exp, cost_reduction, cube
 
 
 # Example Use: Unminimized SOP Expression-------------------------------------
-var_names = ['A', 'B', 'C']
+# var_names = ['A', 'B', 'C', 'D']
 # sop_input = "A'B'C'D' + A'B'CD' + A'BC'D + A'BCD + AB'C'D' + AB'CD' + ABCD"
 # # correct result: B'D' + BCD + A'BD
 
-sop_input = "A'B'C + A'BC + AB'C + ABC"
+# var_names = ['A', 'B', 'C']
+# sop_input = "A'B'C + A'BC + AB'C + ABC"
+# # correct result: C
+
+var_names = ['A', 'B', 'C']
+sop_input = "A'C' + B'C"
 # correct result: C
 
-minimized_sop, cost_reduction, prime_imps = minimize_sop_string(sop_input,
-                                                                var_names)
+minimized_sop, cost_reduction, cube = minimize_sop_string(sop_input, var_names)
 
 print("\nOriginal Expression: ", sop_input)
 print("\nEspresso Minimization: ", minimized_sop)
-print("\nPrime Implicants: ", prime_imps)
 
-print("\nCost Reduction:")
+print("\nCost Reduction")
 # cubes_reduced = cost_reduction[0]
 # print("Cubes Reduced: ", cubes_reduced)
 literals_reduced = cost_reduction[1]
@@ -343,14 +342,12 @@ var_names = ['A', 'B', 'C', 'D']
 pos_input = "(A'+B'+C+D)*(A'+B'+C'+D)*(A'+B'+C'+D')*(A'+B+C+D)*(A+B'+C'+D)*(A+B'+C'+D')*(A+B+C+D)*(A'+B'+C+D')"
 # correct result: (B+C+D) * (A'+B') * (B'+C')
 
-minimized_pos, cost_reduction, prime_imps = minimize_pos_string(pos_input,
-                                                                var_names)
+minimized_pos, cost_reduction, cube = minimize_pos_string(pos_input, var_names)
 
 print("\nOriginal Expression: ", pos_input)
 print("\nEspresso Minimization: ", minimized_pos)
-print("\nPrime Implicants: ", prime_imps)
 
-print("\nCost Reduction:")
+print("\nCost Reduction")
 # cubes_reduced = cost_reduction[0]
 # print("Cubes Reduced: ", cubes_reduced)
 literals_reduced = cost_reduction[1]
