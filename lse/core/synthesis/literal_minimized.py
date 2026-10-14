@@ -8,7 +8,9 @@ import re
 # the user and simplify it before moving on to logic synthesis
 
 
-def get_vars(text: str) -> list[str]:
+def get_vars(text) -> list[str]:
+    if type(text) is not str:
+        text = str(text)
     source = text.upper()
     return [char for char in dict.fromkeys(source) if char.isalpha()]
 
@@ -313,7 +315,7 @@ def minimize_pos_string(pos_str):
     return final_exp, cost_reduction
 
 
-# Example Use: Unminimized SOP Expression-------------------------------------
+# Example Uses: Unminimized SOP Expression-------------------------------------
 # var_names = ['A', 'B', 'C', 'D']
 # sop_input = "A'B'C'D' + A'B'CD' + A'BC'D + A'BCD + AB'C'D' + AB'CD' + ABCD"
 # # correct result: B'D' + BCD + A'BD
@@ -322,38 +324,38 @@ def minimize_pos_string(pos_str):
 # sop_input = "A'B'C + A'BC + AB'C + ABC"
 # # correct result: C
 
-var_names = ['A', 'B', 'C']
-sop_input = "A'C' + B'C"
-# correct result: C
+# var_names = ['A', 'B', 'C']
+# sop_input = "A'C' + B'C"
+# # correct result: C
 
-minimized_sop, cost_reduction = minimize_sop_string(sop_input, var_names)
+# minimized_sop, cost_reduction = minimize_sop_string(sop_input)
 
-print("\nOriginal Expression: ", sop_input)
-print("\nEspresso Minimization: ", minimized_sop)
+# print("\nOriginal Expression: ", sop_input)
+# print("\nEspresso Minimization: ", minimized_sop)
 
-print("\nCost Reduction")
-# cubes_reduced = cost_reduction[0]
-# print("Cubes Reduced: ", cubes_reduced)
-literals_reduced = cost_reduction[1]
-print("Literals Reduced: ", literals_reduced)
+# print("\nCost Reduction")
+# # cubes_reduced = cost_reduction[0]
+# # print("Cubes Reduced: ", cubes_reduced)
+# literals_reduced = cost_reduction[1]
+# print("Literals Reduced: ", literals_reduced)
 
 
-# Example Use: Unminimized POS Expression-------------------------------------
+# Example Uses: Unminimized POS Expression-------------------------------------
 # var_names = ['A', 'B', 'C']
 # pos_input = "(A+B+C')*(A+B'+C')*(A'+B'+C')*(A'+B+C)*(A+B+C)"
 # # correct result: (B+C) * (B'+C') * (A+C')
 
-var_names = ['A', 'B', 'C', 'D']
-pos_input = "(A'+B'+C+D)*(A'+B'+C'+D)*(A'+B'+C'+D')*(A'+B+C+D)*(A+B'+C'+D)*(A+B'+C'+D')*(A+B+C+D)*(A'+B'+C+D')"
-# correct result: (B+C+D) * (A'+B') * (B'+C')
+# var_names = ['A', 'B', 'C', 'D']
+# pos_input = "(A'+B'+C+D)*(A'+B'+C'+D)*(A'+B'+C'+D')*(A'+B+C+D)*(A+B'+C'+D)*(A+B'+C'+D')*(A+B+C+D)*(A'+B'+C+D')"
+# # correct result: (B+C+D) * (A'+B') * (B'+C')
 
-minimized_pos, cost_reduction = minimize_pos_string(pos_input, var_names)
+# minimized_pos, cost_reduction = minimize_pos_string(pos_input)
 
-print("\nOriginal Expression: ", pos_input)
-print("\nEspresso Minimization: ", minimized_pos)
+# print("\nOriginal Expression: ", pos_input)
+# print("\nEspresso Minimization: ", minimized_pos)
 
-print("\nCost Reduction")
-# cubes_reduced = cost_reduction[0]
-# print("Cubes Reduced: ", cubes_reduced)
-literals_reduced = cost_reduction[1]
-print("Literals Reduced: ", literals_reduced)
+# print("\nCost Reduction")
+# # cubes_reduced = cost_reduction[0]
+# # print("Cubes Reduced: ", cubes_reduced)
+# literals_reduced = cost_reduction[1]
+# print("Literals Reduced: ", literals_reduced)
