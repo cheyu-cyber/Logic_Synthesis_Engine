@@ -111,11 +111,9 @@ def get_pi(canonical_sop):
 def get_epi(prime_implicants):
 
     prime_implicants.sort()
-    print(prime_implicants)
     var_names = get_vars(prime_implicants)
-    print(var_names)
 
-    F_init = set()
+    F_init = []
     for term in prime_implicants:
         pattern = []
         for var in var_names:
@@ -125,7 +123,7 @@ def get_epi(prime_implicants):
                 pattern.append('1')
             else:
                 pattern.append('-')
-        F_init.add("".join(pattern))
+        F_init.append("".join(pattern))
 
     essential_pi = set()
     max_len = max(len(s) for s in F_init) if F_init else 0
@@ -145,16 +143,12 @@ def get_epi(prime_implicants):
     for idx in essential_pi:
         epi.append(prime_implicants[idx])
 
-    print(F_init)
-    print(essential_pi)
-    print(epi)
-
     return epi
 
 
-# Example Use
-sop_input = "A'C' + B'C"
-num_pi = get_pi(sop_input)
-num_epi = get_epi(num_pi)
-print(f"Number of PIs: {len(num_pi)}")
-print(f"Number of EPIs: {len(num_epi)}")
+# # Example Use
+# sop_input = "A'C' + B'C"
+# num_pi = get_pi(sop_input)
+# num_epi = get_epi(num_pi)
+# print(f"Number of PIs: {len(num_pi)}")
+# print(f"Number of EPIs: {len(num_epi)}")
