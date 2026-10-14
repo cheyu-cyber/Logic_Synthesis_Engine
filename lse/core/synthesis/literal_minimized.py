@@ -8,6 +8,11 @@ import re
 # the user and simplify it before moving on to logic synthesis
 
 
+def get_vars(text: str) -> list[str]:
+    source = text.upper()
+    return [char for char in dict.fromkeys(source) if char.isalpha()]
+
+
 def clean_expression(input_str: str, chars: str = " \t\n\r'\"") -> str:
     """
     Removes leading and trailing whitespace, quotes, and specified characters
@@ -209,16 +214,16 @@ def espresso_minimize(F_init, R_off, D_dont_care=set()):
 
     cost_reduction = tuple(a - b for a, b in zip(initial_cost, best_cost))
 
-    return F, cost_reduction, F_exp
+    return F, cost_reduction
 
 
 # =====================================================================
 # WRAPPER & HELPER FUNCTIONS
 # =====================================================================
-def minimize_sop_string(sop_str, var_names):
+def minimize_sop_string(sop_str):
     """Minimizes an SOP string expression (e.g. "A'B'C + A'BC + AB'C")."""
 
-    print("----Minimizing SOP expression with Espresso Algorithm----")
+    var_names = get_vars(sop_str)
 
     raw_terms = [t.strip() for t in sop_str.split('+')]
     num_vars = len(var_names)
@@ -242,7 +247,7 @@ def minimize_sop_string(sop_str, var_names):
     R_off = all_minterms - on_minterms
 
     # 3. Run Espresso algorithm
-    optimized_cubes, cost_reduction, cube = espresso_minimize(F_init, R_off)
+    optimized_cubes, cost_reduction = espresso_minimize(F_init, R_off)
 
     # 4. Convert output cubes back to Boolean algebraic string
     sop_terms = []
@@ -257,13 +262,13 @@ def minimize_sop_string(sop_str, var_names):
 
     final_exp = " + ".join(sop_terms) if sop_terms else "0"
 
-    return final_exp, cost_reduction, cube
+    return final_exp, cost_reduction
 
 
-def minimize_pos_string(pos_str, var_names):
+def minimize_pos_string(pos_str):
     """Minimizes an POS string expression (e.g. "A'+B'+C * A'+B+C)."""
 
-    print("----Minimizing POS expression with Espresso Algorithm----")
+    var_names = get_vars(pos_str)
 
     raw_terms = [t.strip() for t in pos_str.split('*')]
     num_vars = len(var_names)
@@ -289,7 +294,7 @@ def minimize_pos_string(pos_str, var_names):
     R_on = all_minterms - off_minterms
 
     # 3. Run Espresso algorithm
-    optimized_cubes, cost_reduction, cube = espresso_minimize(F_off, R_on)
+    optimized_cubes, cost_reduction = espresso_minimize(F_off, R_on)
 
     # 4. Convert output cubes back to Boolean algebraic string
     pos_terms = []
@@ -305,7 +310,7 @@ def minimize_pos_string(pos_str, var_names):
 
     final_exp = " * ".join(pos_terms)
 
-    return final_exp, cost_reduction, cube
+    return final_exp, cost_reduction
 
 
 # Example Use: Unminimized SOP Expression-------------------------------------
@@ -321,7 +326,7 @@ var_names = ['A', 'B', 'C']
 sop_input = "A'C' + B'C"
 # correct result: C
 
-minimized_sop, cost_reduction, cube = minimize_sop_string(sop_input, var_names)
+minimized_sop, cost_reduction = minimize_sop_string(sop_input, var_names)
 
 print("\nOriginal Expression: ", sop_input)
 print("\nEspresso Minimization: ", minimized_sop)
@@ -342,7 +347,7 @@ var_names = ['A', 'B', 'C', 'D']
 pos_input = "(A'+B'+C+D)*(A'+B'+C'+D)*(A'+B'+C'+D')*(A'+B+C+D)*(A+B'+C'+D)*(A+B'+C'+D')*(A+B+C+D)*(A'+B'+C+D')"
 # correct result: (B+C+D) * (A'+B') * (B'+C')
 
-minimized_pos, cost_reduction, cube = minimize_pos_string(pos_input, var_names)
+minimized_pos, cost_reduction = minimize_pos_string(pos_input, var_names)
 
 print("\nOriginal Expression: ", pos_input)
 print("\nEspresso Minimization: ", minimized_pos)
