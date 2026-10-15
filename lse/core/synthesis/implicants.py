@@ -1,8 +1,7 @@
 """This module reports the total count of (essential) prime implicants.
 Also reports the total number of ON-Set minterms and Off-Set maxterms.
 """
-import re
-from literal_minimized import covers, get_vars
+from lse.core.synthesis.literal_minimized import covers as covers_pattern, to_cubes
 
 
 def consensus(cube1, cube2, var):
@@ -27,6 +26,11 @@ def consensus(cube1, cube2, var):
     return res
 
 
+def covers(cube1, cube2):
+    """Returns True if cube1 completely covers cube2 (every literal of cube1 is in cube2)."""
+    return all(cube2.get(v) == val for v, val in cube1.items())
+
+
 def clean_absorptions(cubes):
     """Removes any cube that is absorbed by another cube in the list."""
     to_keep = []
@@ -46,41 +50,40 @@ def clean_absorptions(cubes):
     return to_keep
 
 
-def parse_term(term_str):
-    """Parses a single product term string into a dictionary {var_name: bool}."""
-    term_str = term_str.strip()
-    if '*' in term_str or ' ' in term_str or 'AND' in term_str:
-        tokens = [t for t in re.split(r'\*|\s+|\bAND\b', term_str) if t]
-    else:
-        # Matches single concatenated variables like A'BC, ~a~bc, x1'x2
-        tokens = re.findall(r'[!~]?[A-Za-z][0-9]*\'?', term_str)
-
-    cube = {}
-    for tok in tokens:
-        tok = tok.strip()
-        if not tok:
-            continue
-        is_negated = tok.startswith('!') or tok.startswith('~') or tok.endswith("'")
-        var_name = tok.lstrip('!~').rstrip("'")
-        if var_name:
-            cube[var_name] = not is_negated
-    return cube
+def minterm_cubes(minterms, names):
+    """Turns minterm numbers (canonical.minterms) into cube dictionaries {var_name: bool}
+    via literal_minimized.to_cubes (5 -> '101' -> {a: True, b: False, cin: True})."""
+    return [{s: c == "1" for s, c in zip(names, cube)} for cube in sorted(to_cubes(minterms, len(names)))]
 
 
-def cube_to_string(cube):
+def cube_to_string(cube, names):
     """Formats a cube dict back to a standard Boolean product term."""
     if not cube:
         return "1"  # Tautology
-    return "".join(f"{v}" if val else f"{v}'" for v, val in sorted(cube.items()))
+    return "".join(f"{v}" if cube[v] else f"{v}'" for v in names if v in cube)
 
 
-def get_pi(canonical_sop):
+def term_to_pattern(term, names):
+    """Inverse of cube_to_string: turns a product term back into a '01-' pattern over names.
+    Literals appear in names order; backtracks so overlapping names (x1, x10) parse correctly."""
+    if not names:
+        return "" if term in ("", "1") else None
+    var, later = names[0], names[1:]
+    for literal, bit in ((var + "'", "0"), (var, "1")):
+        if term.startswith(literal):
+            rest = term_to_pattern(term[len(literal):], later)
+            if rest is not None:
+                return bit + rest
+    rest = term_to_pattern(term, later)
+    return None if rest is None else "-" + rest
+
+
+def get_pi(minterms, names):
     """
     Computes all Prime Implicants from a canonical SOP string using Tison's Consensus Method.
     """
     # 1. Parse input SOP string into cube dictionaries
-    raw_terms = [t.strip() for t in re.split(r'\+|\bOR\b', canonical_sop) if t.strip()]
-    cubes = [parse_term(term) for term in raw_terms if term]
+    cubes = minterm_cubes(minterms, names)
 
     # 2. Extract unique variable names
     all_vars = sorted(list({v for cube in cubes for v in cube.keys()}))
@@ -103,41 +106,29 @@ def get_pi(canonical_sop):
             cubes = clean_absorptions(cubes)
 
     # 5. Format results
-    prime_implicants = [cube_to_string(c) for c in cubes]
+    prime_implicants = [cube_to_string(c, names) for c in cubes]
 
     return prime_implicants
 
 
-def get_epi(prime_implicants):
+def get_epi(prime_implicants, minterms, names):
+    """A prime implicant is essential if it is the only one covering some ON-set minterm."""
 
     prime_implicants.sort()
-    var_names = get_vars(prime_implicants)
 
     F_init = []
     for term in prime_implicants:
-        pattern = []
-        for var in var_names:
-            if var + "'" in term:
-                pattern.append('0')
-            elif var in term:
-                pattern.append('1')
-            else:
-                pattern.append('-')
-        F_init.append("".join(pattern))
+        F_init.append(term_to_pattern(term, names))
 
     essential_pi = set()
-    max_len = max(len(s) for s in F_init) if F_init else 0
 
-    for pos in range(max_len):
-        # Find all item indices that have '0' or '1' at the current position
-        zeros = [i for i, item in enumerate(F_init) if pos < len(item) and item[pos] == '0']
-        ones = [i for i, item in enumerate(F_init) if pos < len(item) and item[pos] == '1']
+    for row in to_cubes(minterms, len(names)):
+        # Find all item indices whose pattern covers the current ON-set minterm
+        covering = [i for i, item in enumerate(F_init) if covers_pattern(item, row)]
 
-        # If '0' or '1' occurs in exactly one item at this position, keep its index
-        if len(zeros) == 1:
-            essential_pi.add(zeros[0])
-        if len(ones) == 1:
-            essential_pi.add(ones[0])
+        # If exactly one item covers this minterm, it is essential; keep its index
+        if len(covering) == 1:
+            essential_pi.add(covering[0])
 
     epi = []
     for idx in essential_pi:
