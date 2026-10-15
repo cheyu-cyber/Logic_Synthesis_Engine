@@ -77,11 +77,21 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Loaded input file: {path} ({len(text.splitlines())} lines)")
     for out, forms in results.items():
         print(f"\n[{out}]")
-        print(f"  SOP:           {forms['sop']}")
-        print(f"  Minterms:      \u03a3m({', '.join(map(str, forms['minterms']))})")
-        print(f"  Canonical SOP: {forms['canonical_sop']}")
-        print(f"  Maxterms:      \u03a0M({', '.join(map(str, forms['maxterms']))})")
-        print(f"  Canonical POS: {forms['canonical_pos']}")
+        print(f"  SOP:                      {forms['sop']}")
+        print(f"  Minterms:                 \u03a3m({', '.join(map(str, forms['minterms']))})")
+        print(f"  Maxterms:                 \u03a0M({', '.join(map(str, forms['maxterms']))})")
+        print(f"  1. Canonical SOP:         {forms['canonical_sop']}")
+        print(f"  2. Canonical POS:         {forms['canonical_pos']}")
+        print(f"  3. Inverse Canonical SOP: {forms['inverse_canonical_sop']}")
+        print(f"  4. Inverse Canonical POS: {forms['inverse_canonical_pos']}")
+        print(f"  5. Minimized SOP:         {forms['minimized_sop']}"
+              f"  (literals saved: {forms['sop_cost_reduction'][1]})")
+        print(f"  6. Minimized POS:         {forms['minimized_pos']}"
+              f"  (literals saved: {forms['pos_cost_reduction'][1]})")
+        print(f"  7. Prime Implicants:      {forms['pi_count']}")
+        print(f"  8. Essential PIs:         {forms['epi_count']}")
+        print(f"  9. ON-Set Minterms:       {len(forms['minterms'])}")
+        print(f"  10. OFF-Set Maxterms:     {len(forms['maxterms'])}")
     return 0
 
 
