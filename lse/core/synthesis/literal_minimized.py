@@ -2,54 +2,6 @@
 Using an Espresso-like minimization algorithm
 """
 
-import re
-
-# this submodule will take in the boolean expression from
-# the user and simplify it before moving on to logic synthesis
-
-
-def get_vars(text) -> list[str]:
-    if type(text) is not str:
-        text = str(text)
-    source = text.upper()
-    return [char for char in dict.fromkeys(source) if char.isalpha()]
-
-
-def clean_expression(input_str: str, chars: str = " \t\n\r'\"") -> str:
-    """
-    Removes leading and trailing whitespace, quotes, and specified characters
-    from the input string.
-    """
-    return input_str.strip(chars)
-
-
-# replaces invalid but recognizable aspects of potential inputs
-def normalize_input(expr_str: str):
-    """
-    Normalizes boolean keywords, parses the expression into a SymPy object,
-    and extracts all unique SymPy Symbol objects present in the expression.
-
-    Returns:
-        tuple: (sympy_expression, sorted_list_of_symbols)
-    """
-    # Replace common text-based boolean operators
-    # with SymPy-compatible operators
-    replacements = {
-        "AND": "&",
-        "OR": "|",
-        "NOT": "~",
-        "XOR": "^",
-        "and": "&",
-        "or": "|",
-        "not": "~",
-        "xor": "^"
-    }
-    # Simple word replacement using regex for accurate token boundary matching
-    for word, op in replacements.items():
-        normalized_str = re.sub(rf'\b{word}\b', op, expr_str)
-
-    return normalized_str
-
 
 def minterms_of_cube(cube):
     """Expands a positional cube string (e.g., '0-1')
