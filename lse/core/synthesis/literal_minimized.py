@@ -1,5 +1,5 @@
-"""Literal Minimized SOP/POSforms synthesis module.
-Using an Espresso-like minimization algorithm
+"""Literal Minimized SOP/POS forms synthesis module.
+Using an Espresso-like minimization algorithm.
 """
 
 
@@ -174,36 +174,26 @@ def espresso_minimize(F_init, R_off, D_dont_care=set()):
 # =====================================================================
 # WRAPPER & HELPER FUNCTIONS
 # =====================================================================
-def minimize_sop_string(sop_str):
+def to_cubes(rows, num_vars):
+    """Row numbers -> positional cubes, first input as the MSB (5 -> '101')."""
+    return {"".join(str(m >> (num_vars - 1 - i) & 1) for i in range(num_vars)) for m in rows}
+
+
+
+
+def minimize_sop(minterms, var_names):
     """Minimizes an SOP string expression (e.g. "A'B'C + A'BC + AB'C")."""
 
-    var_names = get_vars(sop_str)
-
-    raw_terms = [t.strip() for t in sop_str.split('+')]
     num_vars = len(var_names)
 
-    # 1. Map input terms to positional binary cubes
-    F_init = set()
-    for term in raw_terms:
-        pattern = []
-        for var in var_names:
-            if var + "'" in term:
-                pattern.append('0')
-            elif var in term:
-                pattern.append('1')
-            else:
-                pattern.append('-')
-        F_init.add("".join(pattern))
+    # 1. ON-set cubes (F) and OFF-set (R)
+    F_init = to_cubes(minterms, num_vars)
+    R_off = minterms_of_cube('-' * num_vars) - F_init
 
-    # 2. Compute ON-set minterms and generate OFF-set (R)
-    on_minterms = set().union(*(minterms_of_cube(c) for c in F_init))
-    all_minterms = {format(i, f'0{num_vars}b') for i in range(1 << num_vars)}
-    R_off = all_minterms - on_minterms
-
-    # 3. Run Espresso algorithm
+    # 2. Run Espresso algorithm
     optimized_cubes, cost_reduction = espresso_minimize(F_init, R_off)
 
-    # 4. Convert output cubes back to Boolean algebraic string
+    # 3. Convert output cubes back to Boolean algebraic string
     sop_terms = []
     for c in sorted(optimized_cubes):
         term = []
@@ -219,95 +209,37 @@ def minimize_sop_string(sop_str):
     return final_exp, cost_reduction
 
 
-def minimize_pos_string(pos_str):
+def minimize_pos(maxterms, var_names):
     """Minimizes an POS string expression (e.g. "A'+B'+C * A'+B+C)."""
 
-    var_names = get_vars(pos_str)
-
-    raw_terms = [t.strip() for t in pos_str.split('*')]
     num_vars = len(var_names)
 
-    # 1. Map input terms to positional binary cubes
-    F_off = set()
-    for term in raw_terms:
-        pattern = []
-        for var in var_names:
-            if var + "'" in term:
-                pattern.append('0')
-            elif var in term:
-                pattern.append('1')
-            else:
-                pattern.append('-')
-        F_off.add("".join(pattern))
-
-    # 2. Compute ON-set minterms and generate OFF-set (R)
-    off_minterms = set().union(*(minterms_of_cube(c) for c in F_off))
-    all_minterms = {format(i, f'0{num_vars}b') for i in range(1 << num_vars)}
-
+    # 1. OFF-set cubes (F') and ON-set (R)
+    F_off = to_cubes(maxterms, num_vars)
     # F_init_off_set = all_minterms - on_minterms
-    R_on = all_minterms - off_minterms
+    R_on = minterms_of_cube('-' * num_vars) - F_off
 
-    # 3. Run Espresso algorithm
+    # 2. Run Espresso algorithm
     optimized_cubes, cost_reduction = espresso_minimize(F_off, R_on)
 
-    # 4. Convert output cubes back to Boolean algebraic string
+    # 3. Convert output cubes back to Boolean algebraic string
     pos_terms = []
     for c in sorted(optimized_cubes):
         term = []
         for i, char in enumerate(c):
             if char == '1':
-                term.append(var_names[i])
-            elif char == '0':
                 term.append(f"{var_names[i]}'")
+            elif char == '0':
+                term.append(var_names[i])
+        pos_terms.append("(" + " + ".join(term) + ")" if term else "0")
 
-        pos_terms.append("(" + " + ".join(term) + ")")
-
-    final_exp = " * ".join(pos_terms)
+    final_exp = " ".join(pos_terms) if pos_terms else "1"
 
     return final_exp, cost_reduction
 
 
-# Example Uses: Unminimized SOP Expression-------------------------------------
-# var_names = ['A', 'B', 'C', 'D']
-# sop_input = "A'B'C'D' + A'B'CD' + A'BC'D + A'BCD + AB'C'D' + AB'CD' + ABCD"
-# # correct result: B'D' + BCD + A'BD
-
-# var_names = ['A', 'B', 'C']
-# sop_input = "A'B'C + A'BC + AB'C + ABC"
-# # correct result: C
-
-# var_names = ['A', 'B', 'C']
-# sop_input = "A'C' + B'C"
-# # correct result: C
-
-# minimized_sop, cost_reduction = minimize_sop_string(sop_input)
-
-# print("\nOriginal Expression: ", sop_input)
-# print("\nEspresso Minimization: ", minimized_sop)
-
-# print("\nCost Reduction")
-# # cubes_reduced = cost_reduction[0]
-# # print("Cubes Reduced: ", cubes_reduced)
-# literals_reduced = cost_reduction[1]
-# print("Literals Reduced: ", literals_reduced)
-
-
-# Example Uses: Unminimized POS Expression-------------------------------------
-# var_names = ['A', 'B', 'C']
-# pos_input = "(A+B+C')*(A+B'+C')*(A'+B'+C')*(A'+B+C)*(A+B+C)"
-# # correct result: (B+C) * (B'+C') * (A+C')
-
-# var_names = ['A', 'B', 'C', 'D']
-# pos_input = "(A'+B'+C+D)*(A'+B'+C'+D)*(A'+B'+C'+D')*(A'+B+C+D)*(A+B'+C'+D)*(A+B'+C'+D')*(A+B+C+D)*(A'+B'+C+D')"
-# # correct result: (B+C+D) * (A'+B') * (B'+C')
-
-# minimized_pos, cost_reduction = minimize_pos_string(pos_input)
-
-# print("\nOriginal Expression: ", pos_input)
-# print("\nEspresso Minimization: ", minimized_pos)
-
-# print("\nCost Reduction")
-# # cubes_reduced = cost_reduction[0]
-# # print("Cubes Reduced: ", cubes_reduced)
-# literals_reduced = cost_reduction[1]
-# print("Literals Reduced: ", literals_reduced)
+# Example Use------------------------------------------------------------------
+# from lse.core.synthesis.canonical import minterms, maxterms
+# minimized_sop, sop_cr = minimize_sop(minterms(module, out), module.inputs)
+# minimized_pos, pos_cr = minimize_pos(maxterms(module, out), module.inputs)
+# print("Literals Saved: ", sop_cr[1], pos_cr[1])   # cost_reduction = (cubes, literals)
