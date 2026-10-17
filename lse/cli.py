@@ -92,6 +92,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  8. Essential PIs:         {forms['epi_count']}")
         print(f"  9. ON-Set Minterms:       {len(forms['minterms'])}")
         print(f"  10. OFF-Set Maxterms:     {len(forms['maxterms'])}")
+        print(f"  XOR/XNOR Factored:        {forms['xor_factored']}"
+              f"  (literals saved vs minimized SOP: {forms['xor_literals_saved']})")
     return 0
 
 

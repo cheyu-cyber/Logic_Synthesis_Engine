@@ -1,6 +1,8 @@
-"""BLIF text -> BlifModule -> canonical / inverse canonical SOP & POS -> minimized SOP & POS -> (E)PIs."""
+"""BLIF text -> BlifModule -> canonical / inverse canonical SOP & POS -> minimized SOP & POS -> (E)PIs
+-> XOR/XNOR factoring."""
 from __future__ import annotations
 
+from lse.core.analysis.xor_factor import xor_factor
 from lse.core.synthesis.canonical import (canonical_pos, canonical_sop, inverse_canonical_pos,
                                           inverse_canonical_sop, maxterms, minterms)
 from lse.core.synthesis.literal_minimized import minimize_sop, minimize_pos
@@ -19,6 +21,7 @@ def run(text: str) -> dict[str, dict]:
         minimized_pos, pos_cr = minimize_pos(maxs, module.inputs)
         prime_imps = get_pi(mins, module.inputs)
         essential_pis = get_epi(prime_imps, mins, module.inputs)
+        xor_factored, xor_saved = xor_factor(mins, module.inputs)
         results[out] = {"sop": module.nodes[out].to_sop(),
                         "minterms": mins,
                         "canonical_sop": canonical_sop(module, out),
@@ -31,7 +34,9 @@ def run(text: str) -> dict[str, dict]:
                         "minimized_pos": minimized_pos,
                         "pos_cost_reduction": pos_cr,
                         "pi_count": len(prime_imps),
-                        "epi_count": len(essential_pis)
+                        "epi_count": len(essential_pis),
+                        "xor_factored": xor_factored,
+                        "xor_literals_saved": xor_saved
                         }
 
     return results
