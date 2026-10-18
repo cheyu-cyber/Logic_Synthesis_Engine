@@ -6,18 +6,41 @@ def uncovered_pairs(rows, cover):
     pairs = []
     for r in sorted(rows):
         for k, bit in enumerate(r):
+            if bit != '0':
+                continue
             other = r[:k] + '1' + r[k + 1:]
-            if bit == '0' and other in rows and not any(covers(c, r) and covers(c, other) for c in cover):
+            if other not in rows:
+                continue
+            covered = False
+            for c in cover:
+                if covers(c, r) and covers(c, other):
+                    covered = True
+                    break
+            if not covered:
                 pairs.append((r, other, r[:k] + '-' + r[k + 1:]))
     return pairs
 
 
 def product(cube, names):
-    return "".join(s if c == '1' else s + "'" for c, s in zip(cube, names) if c != '-') or "1"
+    term = ""
+    for c, s in zip(cube, names):
+        if c == '1':
+            term += s
+        elif c == '0':
+            term += s + "'"
+    if term == "":
+        return "1"
+    return term
 
 
 def sum_term(cube, names):
-    return "(" + " + ".join(s + "'" if c == '1' else s for c, s in zip(cube, names) if c != '-') + ")"
+    lits = []
+    for c, s in zip(cube, names):
+        if c == '1':
+            lits.append(s + "'")
+        elif c == '0':
+            lits.append(s)
+    return "(" + " + ".join(lits) + ")"
 
 
 def static_1_hazards(minterms, names):
@@ -26,8 +49,12 @@ def static_1_hazards(minterms, names):
     on = to_cubes(minterms, n)
     off = minterms_of_cube('-' * n) - on
     cover = espresso_minimize(on, off)[0]
-    return [(f"{product(a, names)} <-> {product(b, names)}", product(expand_cube(m, off), names))
-            for a, b, m in uncovered_pairs(on, cover)]
+    hazards = []
+    for a, b, m in uncovered_pairs(on, cover):
+        transition = f"{product(a, names)} <-> {product(b, names)}"
+        fix = product(expand_cube(m, off), names)
+        hazards.append((transition, fix))
+    return hazards
 
 
 def static_0_hazards(maxterms, names):
@@ -36,5 +63,9 @@ def static_0_hazards(maxterms, names):
     off = to_cubes(maxterms, n)
     on = minterms_of_cube('-' * n) - off
     cover = espresso_minimize(off, on)[0]
-    return [(f"{sum_term(a, names)} <-> {sum_term(b, names)}", sum_term(expand_cube(m, on), names))
-            for a, b, m in uncovered_pairs(off, cover)]
+    hazards = []
+    for a, b, m in uncovered_pairs(off, cover):
+        transition = f"{sum_term(a, names)} <-> {sum_term(b, names)}"
+        fix = sum_term(expand_cube(m, on), names)
+        hazards.append((transition, fix))
+    return hazards

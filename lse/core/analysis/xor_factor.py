@@ -1,7 +1,6 @@
-"""XOR/XNOR factorization of the minimized SOP.
-
-Two cubes that agree everywhere except two variables x, y, where both values flip,
-merge into one term:   P x y' + P x' y = P (x ⊕ y)      P x y + P x' y' = P (x ⊙ y)
+"""
+    XOR/XNOR factorization of the minimized SOP.
+    P x y' + P x' y = P (x ⊕ y)      P x y + P x' y' = P (x ⊙ y)
 """
 
 from lse.core.synthesis.literal_minimized import espresso_minimize, minterms_of_cube, to_cubes
@@ -9,20 +8,38 @@ from lse.core.synthesis.literal_minimized import espresso_minimize, minterms_of_
 
 def xor_pair(c1, c2):
     """(i, j, op) if cubes c1, c2 merge into an XOR/XNOR term on variables i, j, else None"""
-    diff = [k for k in range(len(c1)) if c1[k] != c2[k]]
-    if len(diff) != 2 or '-' in (c1[diff[0]], c1[diff[1]], c2[diff[0]], c2[diff[1]]):
+    diff = []
+    for k in range(len(c1)):
+        if c1[k] != c2[k]:
+            diff.append(k)
+    if len(diff) != 2:
         return None
     i, j = diff
-    return i, j, "⊕" if c1[i] != c1[j] else "⊙"
+    if '-' in (c1[i], c1[j], c2[i], c2[j]):
+        return None
+    if c1[i] != c1[j]:
+        return i, j, "⊕"
+    return i, j, "⊙"
 
 
 def term_string(cube, pair, names):
     """Product term of cube, with the pair's two variables written as (x ⊕ y) / (x ⊙ y)"""
-    skip = pair[:2] if pair else ()
-    lits = [s if c == '1' else s + "'" for k, (c, s) in enumerate(zip(cube, names)) if c != '-' and k not in skip]
+    skip = ()
     if pair:
-        lits.append(f"({names[pair[0]]} {pair[2]} {names[pair[1]]})")
-    return "".join(lits) or "1"
+        skip = (pair[0], pair[1])
+    term = ""
+    for k, (c, s) in enumerate(zip(cube, names)):
+        if k in skip:
+            continue
+        if c == '1':
+            term += s
+        elif c == '0':
+            term += s + "'"
+    if pair:
+        term += f"({names[pair[0]]} {pair[2]} {names[pair[1]]})"
+    if term == "":
+        return "1"
+    return term
 
 
 def xor_factor(minterms, names):
@@ -31,14 +48,33 @@ def xor_factor(minterms, names):
     on = to_cubes(minterms, n)
     cubes = sorted(espresso_minimize(on, minterms_of_cube('-' * n) - on)[0])
 
-    terms, used = [], set()
+    # Pair cubes greedily; each cube is used at most once
+    terms = []
+    used = set()
     for a in range(len(cubes)):
         for b in range(a + 1, len(cubes)):
-            pair = None if used & {a, b} else xor_pair(cubes[a], cubes[b])
+            if a in used or b in used:
+                continue
+            pair = xor_pair(cubes[a], cubes[b])
             if pair:
                 terms.append((cubes[a], pair))
-                used |= {a, b}
-    terms += [(cubes[a], None) for a in range(len(cubes)) if a not in used]
+                used.add(a)
+                used.add(b)
+    for a in range(len(cubes)):
+        if a not in used:
+            terms.append((cubes[a], None))
 
-    saved = sum(len(c) - c.count('-') for c in cubes) - sum(len(c) - c.count('-') for c, _ in terms)
-    return " + ".join(term_string(c, p, names) for c, p in terms) or "0", saved
+    # Literals saved: fixed bits before minus after (an XOR term keeps its two operands)
+    before = 0
+    for c in cubes:
+        before += len(c) - c.count('-')
+    after = 0
+    for c, _ in terms:
+        after += len(c) - c.count('-')
+
+    texts = []
+    for c, p in terms:
+        texts.append(term_string(c, p, names))
+    if not texts:
+        return "0", before - after
+    return " + ".join(texts), before - after
