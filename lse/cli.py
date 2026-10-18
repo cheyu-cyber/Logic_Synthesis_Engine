@@ -12,6 +12,7 @@ from pathlib import Path
 from lse import pipeline
 
 FILE_EXTENSIONS = (".txt", ".blif")
+OUTPUT_DIR = Path(__file__).resolve().parent.parent / "output_log"
 
 
 class InputError(Exception):
@@ -100,6 +101,15 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  Static-0 Hazards (POS):   {len(forms['static_0_hazards'])}")
         for transition, fix in forms['static_0_hazards']:
             print(f"      {transition}  (add {fix})")
+
+    verilog_path = OUTPUT_DIR / (path.stem + ".v")
+    try:
+        OUTPUT_DIR.mkdir(exist_ok=True)
+        verilog_path.write_text(pipeline.verilog(text), encoding="utf-8")
+    except OSError as exc:
+        print(f"lse: error: cannot write {verilog_path}: {exc}", file=sys.stderr)
+        return 1
+    print(f"\nVerilog written to: {verilog_path}")
     return 0
 
 

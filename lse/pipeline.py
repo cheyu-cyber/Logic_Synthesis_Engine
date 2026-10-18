@@ -8,6 +8,7 @@ from lse.core.synthesis.canonical import (canonical_pos, canonical_sop, inverse_
                                           inverse_canonical_sop, maxterms, minterms)
 from lse.core.synthesis.literal_minimized import minimize_sop, minimize_pos
 from lse.core.synthesis.implicants import get_pi, get_epi
+from lse.output.verilog_gen import generate_verilog
 from lse.parsers.blif import parse_blif
 
 
@@ -43,3 +44,8 @@ def run(text: str) -> dict[str, dict]:
                         }
 
     return results
+
+
+def verilog(text: str) -> str:
+    """BLIF text -> structural Verilog of the minimized SOP circuit."""
+    return generate_verilog(parse_blif(text))
