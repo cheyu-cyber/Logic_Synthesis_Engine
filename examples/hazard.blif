@@ -1,0 +1,9 @@
+# 2:1 multiplexer: y = sel'd0 + sel d1, static hazards when sel changes
+# SOP: static-1 at d0 = d1 = 1 (fix: add d0d1); POS: static-0 at d0 = d1 = 0 (fix: add (d0 + d1))
+.model mux2
+.inputs sel d0 d1
+.outputs y
+.names sel d0 d1 y
+01- 1
+1-1 1
+.end

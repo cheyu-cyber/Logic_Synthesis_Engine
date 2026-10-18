@@ -94,6 +94,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  10. OFF-Set Maxterms:     {len(forms['maxterms'])}")
         print(f"  XOR/XNOR Factored:        {forms['xor_factored']}"
               f"  (literals saved vs minimized SOP: {forms['xor_literals_saved']})")
+        print(f"  Static-1 Hazards (SOP):   {len(forms['static_1_hazards'])}")
+        for transition, fix in forms['static_1_hazards']:
+            print(f"      {transition}  (add {fix})")
+        print(f"  Static-0 Hazards (POS):   {len(forms['static_0_hazards'])}")
+        for transition, fix in forms['static_0_hazards']:
+            print(f"      {transition}  (add {fix})")
     return 0
 
 

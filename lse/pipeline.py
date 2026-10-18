@@ -1,7 +1,8 @@
 """BLIF text -> BlifModule -> canonical / inverse canonical SOP & POS -> minimized SOP & POS -> (E)PIs
--> XOR/XNOR factoring."""
+-> XOR/XNOR factoring -> static hazards."""
 from __future__ import annotations
 
+from lse.core.analysis.hazards import static_0_hazards, static_1_hazards
 from lse.core.analysis.xor_factor import xor_factor
 from lse.core.synthesis.canonical import (canonical_pos, canonical_sop, inverse_canonical_pos,
                                           inverse_canonical_sop, maxterms, minterms)
@@ -36,7 +37,9 @@ def run(text: str) -> dict[str, dict]:
                         "pi_count": len(prime_imps),
                         "epi_count": len(essential_pis),
                         "xor_factored": xor_factored,
-                        "xor_literals_saved": xor_saved
+                        "xor_literals_saved": xor_saved,
+                        "static_1_hazards": static_1_hazards(mins, module.inputs),
+                        "static_0_hazards": static_0_hazards(maxs, module.inputs)
                         }
 
     return results
