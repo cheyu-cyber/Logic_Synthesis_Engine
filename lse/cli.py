@@ -101,6 +101,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  Static-0 Hazards (POS):   {len(forms['static_0_hazards'])}")
         for transition, fix in forms['static_0_hazards']:
             print(f"      {transition}  (add {fix})")
+        print("  Truth Table:   \n")
+        for row in forms['truth_table'].splitlines():
+            print(f"  {row}")
 
     verilog_path = OUTPUT_DIR / (path.stem + ".v")
     try:

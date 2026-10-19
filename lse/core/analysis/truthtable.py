@@ -74,7 +74,6 @@ class TruthTable:
 
     def to_cli(self, style: str = "ascii") -> str:
         """returns a formatted table for terminal
-
         args:
             style: 'ascii' (default) or 'unicode' for box-drawing characters.
         """

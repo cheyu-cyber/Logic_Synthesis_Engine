@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from lse.core.analysis.hazards import static_0_hazards, static_1_hazards
 from lse.core.analysis.xor_factor import xor_factor
+import lse.core.analysis.truthtable as tt
 from lse.core.synthesis.canonical import (canonical_pos, canonical_sop, inverse_canonical_pos,
                                           inverse_canonical_sop, maxterms, minterms)
 from lse.core.synthesis.literal_minimized import minimize_sop, minimize_pos
@@ -24,6 +25,7 @@ def run(text: str) -> dict[str, dict]:
         prime_imps = get_pi(mins, module.inputs)
         essential_pis = get_epi(prime_imps, mins, module.inputs)
         xor_factored, xor_saved = xor_factor(mins, module.inputs)
+        truthtable = tt.TruthTable(mins, var_names=module.inputs)
         results[out] = {"sop": module.nodes[out].to_sop(),
                         "minterms": mins,
                         "canonical_sop": canonical_sop(module, out),
@@ -40,7 +42,8 @@ def run(text: str) -> dict[str, dict]:
                         "xor_factored": xor_factored,
                         "xor_literals_saved": xor_saved,
                         "static_1_hazards": static_1_hazards(mins, module.inputs),
-                        "static_0_hazards": static_0_hazards(maxs, module.inputs)
+                        "static_0_hazards": static_0_hazards(maxs, module.inputs),
+                        "truth_table": truthtable.to_cli(style="unicode")
                         }
 
     return results
