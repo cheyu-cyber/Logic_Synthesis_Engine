@@ -12,11 +12,23 @@ class BlifNodes:
     inputs: list[str]
     input_table: list[str] = field(default_factory=list)
     onset: bool = True
+    off_table: list[str] = field(default_factory=list)     # rows ending in 0 (OFF-set), see resolve_covers
 
-    def value (self, bits):
-        hit = any(all(in_table == "-" or int(in_table) == bit for in_table, bit in zip(input_table, bits))
-                  for input_table in self.input_table)
-        return hit if self.onset else not hit
+    def value(self, bits):
+        """Output of this node for the given input bits (one per name in self.inputs)."""
+        hit = False                         # does any row of the cover match the inputs?
+        for row in self.input_table:
+            match = True
+            for c, bit in zip(row, bits):
+                if c != "-" and int(c) != bit:
+                    match = False
+                    break
+            if match:
+                hit = True
+                break
+        if self.onset:
+            return hit                      # rows list the ON-set: a match means 1
+        return not hit                      # rows list the OFF-set: a match means 0
 
     def to_sop(self):
         """Compute the regular SOP form of a cover, e.g. "ab' + c"."""
@@ -76,6 +88,33 @@ def parse_blif(text: str) -> BlifModule:
             raise ValueError(f"cover row outside .names: {raw.strip()}")
         else:
             *pattern, bit = tokens
-            node.input_table.append("".join(pattern))
-            node.onset = bit == "1"
+            if bit == "1":
+                node.input_table.append("".join(pattern))
+            elif bit == "0":
+                node.off_table.append("".join(pattern))
+            else:
+                raise ValueError(f".names {node.output}: output value must be 0 or 1: {raw.strip()}")
+    resolve_covers(module)
     return module
+
+
+def overlaps(row1, row2):
+    """True if two cover rows share an input combination (no position is 0 in one and 1 in the other)"""
+    for a, b in zip(row1, row2):
+        if (a == "0" and b == "1") or (a == "1" and b == "0"):
+            return False
+    return True
+
+
+def resolve_covers(module):
+    """1 rows give the ON-set, 0 rows the OFF-set (BLIF spec). A cover with only 0 rows describes F';
+    in a mixed cover the 1 rows define F (unlisted rows are 0) and no 0 row may overlap a 1 row."""
+    for node in module.nodes.values():
+        if node.off_table and not node.input_table:
+            node.input_table, node.off_table = node.off_table, []
+            node.onset = False
+        else:
+            for off in node.off_table:
+                for on in node.input_table:
+                    if overlaps(on, off):
+                        raise ValueError(f".names {node.output}: rows '{on} 1' and '{off} 0' overlap")
