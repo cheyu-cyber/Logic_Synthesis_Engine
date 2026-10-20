@@ -1,0 +1,8 @@
+.model xor
+.inputs a b
+.outputs y
+.names a b y
+00 1
+10 0
+11 1
+.end
