@@ -32,16 +32,33 @@ class BlifNodes:
 
     def to_sop(self):
         """Compute the regular SOP form of a cover, e.g. "ab' + c"."""
-        input = self.inputs
         terms = []
-        for input_table in self.input_table:
-            term = "".join(s if c == "1" else s + "'" for c, s in zip(input_table, input)
-               if c != "-") or "1"
+        for row in self.input_table:
+            term = ""
+            for c, s in zip(row, self.inputs):
+                if c == "1":
+                    term += s               # uncomplemented literal
+                elif c == "0":
+                    term += s + "'"         # complemented literal
+            if term == "":
+                term = "1"                  # row of all '-': always true
             terms.append(term)
-        sop = "1" if "1" in terms else " + ".join(terms) or "0"
+
+        if "1" in terms:
+            sop = "1"                       # one term is always true, so the whole sum is
+        elif terms:
+            sop = " + ".join(terms)
+        else:
+            sop = "0"                       # no rows: constant 0
+
         if self.onset:
             return sop
-        return {"0": "1", "1": "0"}.get(sop, f"({sop})'")
+        # rows list the OFF-set: the function is the complement of the sum
+        if sop == "0":
+            return "1"
+        if sop == "1":
+            return "0"
+        return f"({sop})'"
 
 @dataclass
 class BlifModule:
