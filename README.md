@@ -1,5 +1,12 @@
 # Logic_Synthesis_Engine
 
+## Usage
+python -m lse.cli
+
+python -m lse.cli examples/full_adder.blif 
+
+python -m lse.cli examples/full_adder.blif > output_log/full_adder.txt
+
 ## Goal
 Input: file (EDA standards) read via cli interface/gui with standard file picker.
 
